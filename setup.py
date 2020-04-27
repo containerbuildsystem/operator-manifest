@@ -12,7 +12,7 @@ setup(
         'ruamel.yaml',
     ],
     classifiers=[
-        'License :: OSI Approved :: BSD 3-Clause "New" or "Revised" License',
+        'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
