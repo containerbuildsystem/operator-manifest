@@ -1,0 +1,6 @@
+# The dependencies are duplicated from setup.py to avoid
+# confusing dependabot
+coverage
+pytest
+pytest-cov
+ruamel.yaml

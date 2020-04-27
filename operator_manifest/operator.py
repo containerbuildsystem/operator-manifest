@@ -373,7 +373,7 @@ class ImageName(object):
         result = cls()
 
         if isinstance(image_name, cls):
-            logger.debug("Attempting to parse ImageName %s as an ImageName", image_name)
+            log.debug("Attempting to parse ImageName %s as an ImageName", image_name)
             return image_name
 
         # registry.org/namespace/repo:tag
