@@ -2,6 +2,39 @@
 
 A python library for processing operator manifests.
 
+## Pull Specifications
+
+The `OperatorManifest` class can be used to identify and modify all the container image pull
+specifications found in an operator
+[Cluster Service Version](https://operator-framework.github.io/olm-book/docs/glossary.html#clusterserviceversion),
+CSV, file. Below is a comprehensive list of the different locations within a CSV file where the
+pull specifications are searched for by `OperatorManifest`:
+
+1. RelatedImage: `spec.relatedImages[].image`
+2. Annotation: `metadata.annotations.containerImage`
+3. Container: `spec.install.spec.deployments[].spec.template.spec.containers[].image`
+4. InitContainer: `spec.install.spec.deployments[].spec.template.spec.initContainers[].image`
+5. RelatedImageEnv: `spec.install.spec.deployments[].spec.template.spec.containers[].env[].value`
+   and `spec.install.spec.deployments[].spec.template.spec.initContainers[].env[].value` where the
+   `name` of the corresponding env Object is prefixed by `RELATED_IMAGE_`.
+
+
+NOTE: The Object paths listed above follow the [jq](https://stedolan.github.io/jq/manual/) syntax
+for iterating through Objects and Arrays. For example, `spec.relatedImages[].image` indicates the
+`image` attribute of every Object listed under the `relatedImages` Array which, in turn, is an
+attribute in the `spec` Object.
+
+When an Operator bundle image is built, the `RelatedImages` should represent the full list of
+container image pull specifications. The `OperatorManifest` class provides the mechanism to
+ensure this is consistently done. It's up to each build system to make the necessary calls to
+`OperatorManifest`. In some cases the build system, e.g.
+[OSBS](https://osbs.readthedocs.io/en/latest/), may want fully control the content of
+`RelatedImages` and will purposely cause failures if `RelatedImages` is already populated.
+
+Another functionality of the `OperatorManifest` class is the ability to modify any of the container
+image pull specifications identified. This is useful for performing container registry translations
+and pinning floating tags to a specific digest.
+
 ## Running the Unit Tests
 
 The testing environment is managed by [tox](https://tox.readthedocs.io/en/latest/). Simply run
