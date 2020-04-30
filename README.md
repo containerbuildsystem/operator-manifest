@@ -17,6 +17,8 @@ pull specifications are searched for by `OperatorManifest`:
 5. RelatedImageEnv: `spec.install.spec.deployments[].spec.template.spec.containers[].env[].value`
    and `spec.install.spec.deployments[].spec.template.spec.initContainers[].env[].value` where the
    `name` of the corresponding env Object is prefixed by `RELATED_IMAGE_`.
+6. MetadataAnnotation: **not yet supported**. `metadata.annotations[]` for any given Object where
+   the annotation value contains an image pull specification.
 
 
 NOTE: The Object paths listed above follow the [jq](https://stedolan.github.io/jq/manual/) syntax
