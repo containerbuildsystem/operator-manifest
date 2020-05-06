@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import os
 import logging
+import re
 from collections import OrderedDict
 
 from ruamel.yaml import YAML
@@ -362,6 +363,10 @@ class OperatorManifest(object):
 
 
 class ImageName(object):
+
+    _NOT_A_WORD_START = re.compile(r'^\W+')
+    _NOT_A_WORD_END = re.compile(r'\W+$')
+
     def __init__(self, registry=None, namespace=None, repo=None, tag=None):
         self.registry = registry
         self.namespace = namespace
@@ -397,6 +402,15 @@ class ImageName(object):
             break
 
         return result
+
+    @classmethod
+    def from_text(cls, text):
+        for word in text.split(' '):
+            word = cls._NOT_A_WORD_START.sub('', word)
+            word = cls._NOT_A_WORD_END.sub('', word)
+            image_name = ImageName.parse(word)
+            if image_name.registry and image_name.repo:
+                yield image_name
 
     def to_str(self, registry=True, tag=True, explicit_tag=False,
                explicit_namespace=False):

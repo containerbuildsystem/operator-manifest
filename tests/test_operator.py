@@ -802,3 +802,73 @@ def test_image_name_comparison():
     i2 = ImageName(registry='foo.com', namespace='spam', repo='bar', tag='2')
     assert not i1 == i2
     assert i1 != i2
+
+
+@pytest.mark.parametrize('text, expected_image_names', (
+    ('', []),
+    # No repo
+    ('registry.example.com:latest', []),
+    ('registry.example.com@sha256', []),
+    # No registry
+    ('no-registry:latest', []),
+    ('no-registry@sha256:123', []),
+    # Implicit "latest" tag
+    ('registry.example.io/image', [ImageName.parse('registry.example.io/image:latest')]),
+    # Different tag formats
+    ('registry.example.io/image:latest', [ImageName.parse('registry.example.io/image:latest')]),
+    ('registry.example.io/image:1.0', [ImageName.parse('registry.example.io/image:1.0')]),
+    (
+        'registry.example.io/image:v1.0-spam',
+        [ImageName.parse('registry.example.io/image:v1.0-spam')],
+    ),
+    # Digest reference
+    (
+        'registry.example.io/image@sha256:123',
+        [ImageName.parse('registry.example.io/image@sha256:123')],
+    ),
+    # One or more namespaces
+    (
+        'registry.example.io/org/image:latest',
+        [ImageName.parse('registry.example.io/org/image:latest')],
+    ),
+    (
+        'registry.example.io/org/group/image:latest',
+        [ImageName.parse('registry.example.io/org/group/image:latest')],
+    ),
+    # Dashes and dots in registry, namespace, or repo are allowed
+    ('registry.example.io/image:latest', [ImageName.parse('registry.example.io/image:latest')]),
+    ('registry-example.io/image:latest', [ImageName.parse('registry-example.io/image:latest')]),
+    ('registry.example.io/im.age:latest', [ImageName.parse('registry.example.io/im.age:latest')]),
+    ('registry.example.io/im-age:latest', [ImageName.parse('registry.example.io/im-age:latest')]),
+    (
+        'registry.example.io/o.rg/image:latest',
+        [ImageName.parse('registry.example.io/o.rg/image:latest')],
+    ),
+    (
+        'registry.example.io/o-rg/image:latest',
+        [ImageName.parse('registry.example.io/o-rg/image:latest')],
+    ),
+    # Surrounding text
+    (
+        'ignore registry.example.io/image:1.0 and ignore',
+        [ImageName.parse('registry.example.io/image:1.0')],
+    ),
+    # "Touching" text
+    (
+        '\n~!@%$:#registry.example.io/image:1.0:\n^&*()',
+        [ImageName.parse('registry.example.io/image:1.0')],
+    ),
+    # Multiple pull specs
+    (
+        'registry.io/image:v1.0 registry.io/image:v1.3',
+        [ImageName.parse('registry.io/image:v1.0'), ImageName.parse('registry.io/image:v1.3')],
+    ),
+    # Multiple pull specs with surrounding text
+    (
+        'ignore me registry.io/image:v1.0 and, please, also ignore me: registry.io/image:v1.3',
+        [ImageName.parse('registry.io/image:v1.0'), ImageName.parse('registry.io/image:v1.3')],
+    ),
+))
+def test_image_name_from_text(text, expected_image_names):
+    image_names = ImageName.from_text(text)
+    assert list(image_names) == expected_image_names
