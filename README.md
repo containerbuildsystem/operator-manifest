@@ -11,7 +11,10 @@ CSV, file. Below is a comprehensive list of the different locations within a CSV
 pull specifications are searched for by `OperatorManifest`:
 
 1. RelatedImage: `spec.relatedImages[].image`
-2. Annotation: `metadata.annotations.containerImage`
+2. Annotation: any of:
+   1. `metadata.annotations.containerImage`
+   2. `metadata.annotations[]` for any given Object where the annotation value contains one
+      or more image pull specification.
 3. Container: `spec.install.spec.deployments[].spec.template.spec.containers[].image`
 4. InitContainer: `spec.install.spec.deployments[].spec.template.spec.initContainers[].image`
 5. RelatedImageEnv: `spec.install.spec.deployments[].spec.template.spec.containers[].env[].value`
