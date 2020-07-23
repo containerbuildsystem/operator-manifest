@@ -516,6 +516,19 @@ random:
 """.format(**PULLSPECS)
 
 
+YAML_LIST_CONTENT = """\
+- op: replace
+  path: /spec/foo
+  value:
+    type: object
+    properties:
+      name:
+        type: string
+        enum:
+        - "bar"
+"""
+
+
 class CSVFile(object):
     def __init__(self, content):
         self.content = content
@@ -529,6 +542,7 @@ class CSVFile(object):
 ORIGINAL = CSVFile(ORIGINAL_CONTENT)
 REPLACED = CSVFile(REPLACED_CONTENT)
 REPLACED_EVERYWHERE = CSVFile(REPLACED_EVERYWHERE_CONTENT)
+YAML_LIST = CSVFile(YAML_LIST_CONTENT)
 
 
 def delete_all_annotations(obj):
@@ -557,6 +571,12 @@ class TestOperatorCSV(object):
         with pytest.raises(NotOperatorCSV) as exc_info:
             OperatorCSV("original.yaml", data)
         assert str(exc_info.value) == "Not a ClusterServiceVersion"
+
+    def test_yaml_not_object(self):
+        data = YAML_LIST.data
+        with pytest.raises(NotOperatorCSV) as exc_info:
+            OperatorCSV("original.yaml", data)
+        assert str(exc_info.value) == "File does not contain a YAML object"
 
     def test_from_file(self, tmpdir):
         path = tmpdir.join("original.yaml")
@@ -1115,6 +1135,16 @@ class TestOperatorManifest(object):
         del replaced_data["kind"]
         with open(str(replaced), "w") as f:
             yaml.dump(replaced_data, f)
+
+        manifest = OperatorManifest.from_directory(str(tmpdir))
+        assert manifest.files == []
+
+    def test_from_directory_yaml_list(self, tmpdir):
+        yaml_list = tmpdir.join("list.yaml")
+
+        yaml_list_data = YAML_LIST.data
+        with open(str(yaml_list), "w") as f:
+            yaml.dump(yaml_list_data, f)
 
         manifest = OperatorManifest.from_directory(str(tmpdir))
         assert manifest.files == []
