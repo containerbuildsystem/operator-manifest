@@ -376,6 +376,10 @@ class OperatorCSV(object):
         """
         named_pullspecs = self._named_pullspecs()
 
+        if not named_pullspecs:
+            log.info("No pullspecs, skipping updates of relatedImages section")
+            return
+
         by_name = OrderedDict()
         conflicts = []
 
