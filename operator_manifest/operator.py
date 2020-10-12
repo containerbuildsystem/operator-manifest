@@ -10,6 +10,12 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 
 yaml = YAML()
+# ruamel will introduce a line break if the yaml line is longer than
+# yaml.width. Unfortunately, this causes issues for JSON values nested
+# within a YAML file, e.g. metadata.annotations."alm-examples" in a CSV
+# file. The default value is 80. Set it to a more forgivinng higher
+# number to avoid issues
+yaml.width = 200
 log = logging.getLogger(__name__)
 
 
