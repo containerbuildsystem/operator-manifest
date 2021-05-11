@@ -3,7 +3,6 @@ import copy
 from collections import Counter
 
 import pytest
-from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from operator_manifest.operator import (
@@ -13,10 +12,8 @@ from operator_manifest.operator import (
     OperatorManifest,
     chain_get,
     default_pullspec_heuristic,
+    yaml,
 )
-
-
-yaml = YAML()
 
 
 SHA = "5d141ae1081640587636880dbe8489439353df883379158fa8742d5a3be75475"
