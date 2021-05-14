@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import copy
 from collections import Counter
+from textwrap import dedent
 
 import pytest
-from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from operator_manifest.operator import (
@@ -13,10 +13,8 @@ from operator_manifest.operator import (
     OperatorManifest,
     chain_get,
     default_pullspec_heuristic,
+    yaml,
 )
-
-
-yaml = YAML()
 
 
 SHA = "5d141ae1081640587636880dbe8489439353df883379158fa8742d5a3be75475"
@@ -1315,3 +1313,30 @@ def test_image_name_comparison():
     i2 = ImageName(registry='foo.com', namespace='spam', repo='bar', tag='2')
     assert not i1 == i2
     assert i1 != i2
+
+
+class TestOperatorCSV2(object):
+    """Additional test cases not copied from atomic-reactor."""
+
+    def test_replace_retain_quotes(self, tmpdir):
+        original_content = dedent("""\
+        kind: ClusterServiceVersion
+        blah:
+        - name: "quoted-value"
+        - {"name": "weird:value"}
+        """)
+        replaced_content = dedent("""\
+        kind: ClusterServiceVersion
+        blah:
+        - name: "quoted-value"
+        - {"name": "weird:value"}
+        """)
+        original_path = tmpdir.join("original.yaml")
+        csv = OperatorCSV(str(original_path), yaml.load(original_content))
+        csv.dump()
+        with open(original_path) as original_f:
+            processed_original_content = original_f.read()
+        # This check is important because it compares the processed original
+        # contents with exactly what's defined in the REPLACED_CONTENT_2 before
+        # it is processed by ruamel.
+        assert processed_original_content == replaced_content
