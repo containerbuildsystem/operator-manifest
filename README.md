@@ -38,6 +38,30 @@ Another functionality of the `OperatorManifest` class is the ability to modify a
 image pull specifications identified. This is useful for performing container registry translations
 and pinning floating tags to a specific digest.
 
+## Using the CLI
+
+Once installed, this library provides the `operator-manifest` script which is a CLI wrapper for
+using the library. Notably, there are three subcommands to the script. Use
+`operator-manifest --help` for usage details.
+
+The `pin` subcommand is a "porcelain-like" command to resolve all image references found in the
+`ClusterServiceVersion` file to digests, and modify the `ClusterServiceVersion` file accordingly.
+
+The `extract` and `replace` subcommands allow users to use a custom image reference resolver. The
+first extracts all the image references from the `ClusterServiceVersion` file, while the second
+modifies the image references in the `ClusterServiceVersion` file based on an input replacement
+map. See `operator-manifest extract --help` and `operator-manifest replace --help` for more
+details.
+
+Both `replace` and `pin` will:
+
+* Populate the `.spec.relatedImages` section of the `ClusterServiceVersion` file.
+* Skip modifications to the `ClusterServiceVersion` file if the `spec.relatedImages` is already
+  populated.
+* Raise an error if the `spec.relatedImages` section is already populated and there are environment
+  variables in the `ClusterServiceVersion` file that use the prefix `RELATED_IMAGE_`. This is
+  unexpected behavior. If you have a valid use case, file an issue to remove this restriction.
+
 ## Running the Unit Tests
 
 The testing environment is managed by [tox](https://tox.readthedocs.io/en/latest/). Simply run

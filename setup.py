@@ -20,4 +20,9 @@ setup(
     ],
     license="BSD-3-Clause",
     python_requires='>=3.5',
+    entry_points={
+        'console_scripts': [
+            'operator-manifest = operator_manifest.cli:main',
+        ],
+    },
 )
