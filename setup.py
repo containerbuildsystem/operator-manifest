@@ -11,6 +11,7 @@ setup(
     url='https://github.com/containerbuildsystem/operator-manifest',
     install_requires=[
         'ruamel.yaml',
+        'six',
     ],
     classifiers=[
         'License :: OSI Approved :: BSD License',
