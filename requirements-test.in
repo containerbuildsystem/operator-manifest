@@ -1,5 +1,5 @@
-# The dependencies are duplicated from setup.py to avoid
-# confusing dependabot
+-r requirements.txt
+
 coverage
 pytest
 pytest-cov
