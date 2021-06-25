@@ -27,6 +27,30 @@ jobs:
         pip install tox tox-gh-actions
     - name: Test with tox
       run: tox
+    - name: Run coveralls-python
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_FLAG_NAME: python-${{ matrix.python-version }}
+        COVERALLS_PARALLEL: true
+      run: |
+        pip3 install --upgrade pip
+        pip3 install --upgrade setuptools
+        pip3 install --upgrade coveralls
+        coveralls --service=github
+
+  coveralls-finish:
+    name: Finish coveralls-python
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Finished
+        run: |
+          pip3 install --upgrade pip
+          pip3 install --upgrade setuptools
+          pip3 install --upgrade coveralls
+          coveralls --finish --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   lint:
     runs-on: ubuntu-latest
