@@ -62,6 +62,23 @@ Both `replace` and `pin` will:
   variables in the `ClusterServiceVersion` file that use the prefix `RELATED_IMAGE_`. This is
   unexpected behavior. If you have a valid use case, file an issue to remove this restriction.
 
+## Using the Container Image
+
+`operator-manifest` is packaged as a container image available at
+`quay.io/containerbuildsystem/operator-manifest`. Using it requires volumes to be mounted on the
+containers. Use `/opt/app-root/manifest-dir` for the manifest files. The working directory is by
+default `/opt/app-root/workdir`. The json files created by the `pin` subcommand, for example, are
+stored in that location. Don't forget to set the `:z` or `:Z` volume labels if using selinux.
+
+Here's an example usage:
+```
+$ podman run --rm -it \
+    -v /tmp/my-bundle-metadata:/opt/app-root/manifest-dir:Z \
+    -v /tmp/my-workdir:/opt/app-root/workdir:Z \
+    quay.io/containerbuildsystem/operator-manifest:latest operator-manifest pin /opt/app-root/manifest-dir \
+    --authfile /opt/app-root/workdir/docker-config.json
+```
+
 ## Running the Unit Tests
 
 The testing environment is managed by [tox](https://tox.readthedocs.io/en/latest/). Simply run
