@@ -25,22 +25,28 @@ def main(args=None):
     namespace = parser.parse_args(args)
     if namespace.command == 'extract':
         extract_image_references(namespace.manifest_dir, output=namespace.output)
+    elif namespace.command == 'resolve':
+        resolve_image_references(
+            namespace.images_file, authfile=namespace.authfile, output=namespace.output
+        )
     elif namespace.command == 'replace':
         replace_image_references(
             namespace.manifest_dir, namespace.replacements_file, dry_run=namespace.dry_run
         )
     elif namespace.command == 'pin':
-        # pin_image_references requires that the output_replace parameter is a seekable file and
+        # pin_image_references requires that the output_* parameters are each a seekable file and
         # will raise an error otherwise. In order to provide a more meaningful error to the user,
         # we explicitly check for stdout since that's likely the only case where a non-seekable
         # file is used from the CLI.
         if namespace.output_replace.fileno() == sys.stdout.fileno():
             raise ValueError('Cannot use stdout for --output-replace parameter')
+        if namespace.output_extract.fileno() == sys.stdout.fileno():
+            raise ValueError('Cannot use stdout for --output-extract parameter')
         pin_image_references(
             namespace.manifest_dir,
-            authfile=namespace.authfile,
             output_extract=namespace.output_extract,
             output_replace=namespace.output_replace,
+            authfile=namespace.authfile,
             dry_run=namespace.dry_run,
         )
     else:
@@ -69,6 +75,38 @@ def _make_parser():
             'The path to store the extracted image references. Use - to specify stdout.'
             ' By default - is used.'
         ),
+    )
+
+    resolve_parser = subparsers.add_parser(
+        'resolve',
+        description=(
+            'Resolve a list of image references into their corresponding image reference digests.'
+        ),
+    )
+    resolve_parser.add_argument(
+        'images_file',
+        metavar='IMAGES_FILE',
+        type=argparse.FileType('r'),
+        help=(
+            'The path to the file containing the image references to be resolved. The format of'
+            ' this file is a JSON Array of Strings where each item is an image reference. Use -'
+            ' to specify stdin.'
+        ),
+    )
+    resolve_parser.add_argument(
+        '--output',
+        metavar='OUTPUT',
+        default='-',
+        type=argparse.FileType('w+'),
+        help=(
+            'The path to store the image reference replacements. Use - to specify stdout.'
+            ' By default - is used.'
+        ),
+    )
+    resolve_parser.add_argument(
+        '--authfile',
+        metavar='AUTHFILE',
+        help='The path to the authentication file for registry communication.',
     )
 
     replace_parser = subparsers.add_parser(
@@ -174,6 +212,30 @@ def extract_image_references(manifest_dir, output):
     return image_references
 
 
+def resolve_image_references(images_file, output, authfile=None):
+    """
+    Resolve the image references into their corresponding image reference digests.
+
+    :param file images_file: the file-like object to read the image references
+    :param file output: the file-like object to store the resolved image references
+    :param str authfile: the path to the authentication file for registry communication
+    :return: the dict of the original image references mapped to their resolved image references
+    :rtype: dict<str:str>
+    """
+    references = json.load(images_file)
+
+    replacements = {}
+    for reference in references:
+        # Skip pinning of image references that already use digest
+        if '@' in reference:
+            continue
+        replacements[reference] = resolve_image_reference(reference, authfile=authfile)
+
+    json.dump(replacements, output)
+
+    return replacements
+
+
 def replace_image_references(manifest_dir, replacements_file, dry_run=False):
     """
     Use replacements_file to modify the image references in the CSVs found in the manifest_dir.
@@ -213,9 +275,9 @@ def replace_image_references(manifest_dir, replacements_file, dry_run=False):
 
 def pin_image_references(
     manifest_dir,
+    output_extract,
+    output_replace,
     authfile=None,
-    output_extract=None,
-    output_replace=None,
     dry_run=False,
 ):
     """
@@ -225,33 +287,30 @@ def pin_image_references(
     container image registry. Then, each reference is replaced with the resolved, pinned, version.
 
     :param str manifest_dir: the path to the directory where the manifest files are stored
-    :param str authfile: the path to the authentication file for registry communication
     :param file output_extract: the file-like object to store the extracted image references
     :param file output_replace: the file-like object to store the image reference replacements
+    :param str authfile: the path to the authentication file for registry communication
     :param bool dry_run: whether or not to apply the replacements
     :raises ValueError: if more than one CSV in manifest_dir
     :raises ValueError: if validation fails
     """
     if not output_replace.seekable():
         raise ValueError('output_replace must be a seekable object')
+    if not output_extract.seekable():
+        raise ValueError('output_extract must be a seekable object')
 
-    references = extract_image_references(manifest_dir, output=output_extract)
+    extract_image_references(manifest_dir, output=output_extract)
 
     if not _should_apply_replacements(manifest_dir):
         logger.warning('Skipping replacements. Replacement file is not created')
         return
 
-    replacements = {}
-    for reference in references:
-        # Skip pinning of image references that already use digest
-        if '@' in reference:
-            continue
-        replacements[reference] = resolve_image_reference(reference, authfile=authfile)
+    output_extract.flush()
+    output_extract.seek(0)
+    resolve_image_references(output_extract, output_replace, authfile=authfile)
 
-    json.dump(replacements, output_replace)
     output_replace.flush()
     output_replace.seek(0)
-
     replace_image_references(manifest_dir, output_replace, dry_run=dry_run)
 
 
