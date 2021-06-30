@@ -52,7 +52,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  lint:
+  flake8:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -70,3 +70,11 @@ jobs:
         pip install tox
     - name: Test with tox
       run: tox -e flake8
+
+  hadolint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: hadolint/hadolint-action@v1.5.0
+      with:
+        dockerfile: Dockerfile
