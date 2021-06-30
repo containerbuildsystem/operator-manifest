@@ -1,5 +1,9 @@
 # Operator Manifest
 
+[![gating status badge]][gating status link]
+[![image status badge]][image status link]
+
+
 A python library for processing operator manifests.
 
 ## Pull Specifications
@@ -108,3 +112,7 @@ When installing the dependencies in a production environment, run
 `pip-sync requirements.txt`, which will make sure your virtualenv only has the packages listed in
 `requirements.txt`.
 
+[gating status badge]: https://github.com/containerbuildsystem/operator-manifest/actions/workflows/gating.yaml/badge.svg?branch=master&event=push
+[gating status link]: https://github.com/containerbuildsystem/operator-manifest/actions?query=event%3Apush+branch%3Amaster+workflow%3A%22gating%22
+[image status badge]: https://quay.io/repository/containerbuildsystem/operator-manifest/status
+[image status link]: https://quay.io/repository/containerbuildsystem/operator-manifest
