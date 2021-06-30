@@ -10,6 +10,7 @@ from operator_manifest.cli import (
     main,
     pin_image_references,
     replace_image_references,
+    resolve_image_references,
 )
 
 CSV_TEMPLATE = """\
@@ -85,6 +86,59 @@ class TestExtractImageReferences:
     def test_check_manifest_dir_exists(self, tmp_path, dry_run):
         with pytest.raises(ValueError, match=r'/manifests is not a directory or does not exist'):
             extract_image_references(str(tmp_path / 'manifests'), output=io.StringIO())
+
+
+class TestResolveImageReferences:
+    @mock.patch('operator_manifest.cli.resolve_image_reference')
+    def test_resolve_all_image_references(self, resolve_image_reference):
+        replacements = {
+            'registry.example.com/eggs:9.8': 'registry.example.com/eggs@sha256:2',
+            'registry.example.com/maps/spam-operator:1.2': (
+                'registry.example.com/maps/spam-operator@sha256:1'
+            ),
+        }
+        resolve_image_reference.side_effect = lambda image_ref, authfile: replacements[image_ref]
+
+        images_file = io.StringIO(json.dumps(list(replacements.keys())))
+        output_file = io.StringIO()
+
+        resolve_image_references(images_file, output_file)
+
+        output_file.seek(0)
+        assert json.load(output_file) == replacements
+
+    @pytest.mark.parametrize('dry_run', (True, False))
+    @mock.patch('operator_manifest.cli.resolve_image_reference')
+    def test_resolve_some_image_references(self, resolve_image_reference, tmp_path, dry_run):
+        replacements = {'registry.example.com/eggs:9.8': 'registry.example.com/eggs@sha256:2'}
+        resolve_image_reference.side_effect = lambda image_ref, authfile: replacements[image_ref]
+
+        images_file = io.StringIO(
+            json.dumps(
+                list(replacements.keys()) + ['registry.example.com/maps/spam-operator@sha256:1']
+            )
+        )
+        output_file = io.StringIO()
+
+        resolve_image_references(images_file, output_file)
+
+        output_file.seek(0)
+        assert json.load(output_file) == replacements
+
+    @mock.patch('operator_manifest.cli.resolve_image_reference')
+    def test_authfile_is_used(self, resolve_image_reference, tmp_path):
+        replacements = {'registry.example.com/eggs:9.8': 'registry.example.com/eggs@sha256:2'}
+        resolve_image_reference.side_effect = lambda image_ref, authfile: replacements[image_ref]
+
+        authfile = tmp_path / 'auth.json'
+
+        images_file = io.StringIO(json.dumps(list(replacements.keys())))
+        output_file = io.StringIO()
+
+        resolve_image_references(images_file, output_file, authfile=str(authfile))
+        resolve_image_reference.assert_called_with(
+            list(replacements.keys())[0], authfile=str(authfile)
+        )
 
 
 class TestReplaceImageReferences:
@@ -337,7 +391,7 @@ class TestPinImageReferences:
         }
 
     @pytest.mark.parametrize('dry_run', (True, False))
-    def test_output_file_is_seekable(self, tmp_path, dry_run):
+    def test_output_extract_is_seekable(self, tmp_path, dry_run):
         # Ideally, simply use sys.stdout as a non-seekable file object. However, pytest does
         # some special manipulation to sys.stdout that makes it seekable during unit tests.
         output_replace_file = io.IOBase()
@@ -347,6 +401,20 @@ class TestPinImageReferences:
                 str(tmp_path / 'manifests'),
                 output_extract=io.StringIO(),
                 output_replace=output_replace_file,
+                dry_run=dry_run,
+            )
+
+    @pytest.mark.parametrize('dry_run', (True, False))
+    def test_output_replace_is_seekable(self, tmp_path, dry_run):
+        # Ideally, simply use sys.stdout as a non-seekable file object. However, pytest does
+        # some special manipulation to sys.stdout that makes it seekable during unit tests.
+        output_extract_file = io.IOBase()
+        assert not output_extract_file.seekable()
+        with pytest.raises(ValueError, match=r'output_extract must be a seekable object'):
+            pin_image_references(
+                str(tmp_path / 'manifests'),
+                output_extract=output_extract_file,
+                output_replace=io.StringIO(),
                 dry_run=dry_run,
             )
 
@@ -402,6 +470,14 @@ class TestArgumentParsing:
         main(['extract', 'my-manifest-dir'])
         extract_image_references.assert_called_with('my-manifest-dir', output=mock.ANY)
 
+    @mock.patch('operator_manifest.cli.resolve_image_references')
+    def test_resolve_image_references(self, resolve_image_references, tmp_path):
+        images_file = tmp_path / 'images.json'
+        images_file.write_text('')
+        main(['resolve', str(images_file)])
+        resolve_image_references.assert_called_with(mock.ANY, authfile=None, output=mock.ANY)
+        assert resolve_image_references.call_args[0][0].name == str(images_file)
+
     @mock.patch('operator_manifest.cli.replace_image_references')
     def test_replace_image_references(self, replace_image_references, tmp_path):
         replacements_file = tmp_path / 'replacements.json'
@@ -420,9 +496,13 @@ class TestArgumentParsing:
             output_replace=mock.ANY,
         )
 
-    def test_pin_disallow_stdout(self, tmp_path):
+    def test_pin_disallow_stdout_for_output_replace(self, tmp_path):
         with pytest.raises(ValueError, match=r'Cannot use stdout for --output-replace parameter'):
             main(['pin', 'my-manifest-dir', '--output-replace', '-'])
+
+    def test_pin_disallow_stdout_for_output_extract(self, tmp_path):
+        with pytest.raises(ValueError, match=r'Cannot use stdout for --output-extract parameter'):
+            main(['pin', 'my-manifest-dir', '--output-extract', '-'])
 
     @mock.patch('operator_manifest.cli._make_parser')
     def test_insufficient_parameters(self, _make_parser):

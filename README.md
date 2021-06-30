@@ -57,6 +57,12 @@ modifies the image references in the `ClusterServiceVersion` file based on an in
 map. See `operator-manifest extract --help` and `operator-manifest replace --help` for more
 details.
 
+The `resolve` subcommand gives users direct access to the built-in resolver used by `pin`. In fact,
+the `pin` subcommand is a shortcut for piping the other three subcommands together:
+```
+operator-manifest extract . | operator-manfiest resolve - | operator-manifest replace . -
+```
+
 Both `replace` and `pin` will:
 
 * Populate the `.spec.relatedImages` section of the `ClusterServiceVersion` file.
