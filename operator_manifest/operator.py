@@ -7,6 +7,7 @@ from collections import OrderedDict
 import six
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from operator_manifest.helpers import validate_with_schema
 
 
 yaml = YAML()
@@ -306,11 +307,7 @@ class OperatorCSV(object):
             implementation will be used. For more information, see the
             default_pullspec_heuristic() function in this module.
         """
-        try:
-            if data.get("kind") != OPERATOR_CSV_KIND:
-                raise NotOperatorCSV("Not a ClusterServiceVersion")
-        except AttributeError:
-            raise NotOperatorCSV("File does not contain a YAML object")
+        check_csv(data, 'schemas/csv_schema.json')
         self.path = path
         self.data = data
         self._pullspec_heuristic = pullspec_heuristic
@@ -736,3 +733,12 @@ def chain_get(d, path, default=None):
         except (IndexError, KeyError):
             return default
     return obj
+
+
+def check_csv(data, schema):
+    try:
+        if data.get("kind") != OPERATOR_CSV_KIND:
+            raise NotOperatorCSV("Not a ClusterServiceVersion")
+    except AttributeError as exc:
+        raise NotOperatorCSV("File does not contain a YAML object") from exc
+    validate_with_schema(data, schema)

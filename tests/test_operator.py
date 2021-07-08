@@ -2,10 +2,8 @@
 import copy
 from collections import Counter
 from textwrap import dedent
-
 import pytest
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
-
 from operator_manifest.operator import (
     ImageName,
     NotOperatorCSV,
@@ -696,12 +694,7 @@ class TestOperatorCSV(object):
         assert ri2_log.format(ri2=RI2) not in caplog.text
 
     @pytest.mark.parametrize("rel_images", [True, False])
-    @pytest.mark.parametrize("rel_envs, containers", [
-        (False, False),
-        (False, True),
-        # (True, False) - Cannot have envs without containers
-        (True, True),
-    ])
+    @pytest.mark.parametrize("rel_envs", [True, False])
     @pytest.mark.parametrize("annotations", [True, False])
     @pytest.mark.parametrize("init_rel_envs, init_containers", [
         (False, False),
@@ -709,8 +702,8 @@ class TestOperatorCSV(object):
         # (True, False) - Cannot have initContainer envs without initContainers
         (True, True),
     ])
-    def test_get_pullspecs_some_locations(self, rel_images, rel_envs, containers,
-                                          annotations, init_rel_envs, init_containers):
+    def test_get_pullspecs_some_locations(self, rel_images, rel_envs, annotations,
+                                          init_rel_envs, init_containers):
         data = ORIGINAL.data
         expected = {p.value for p in PULLSPECS.values()}
 
@@ -723,10 +716,6 @@ class TestOperatorCSV(object):
             for d in deployments:
                 for c in chain_get(d, ["spec", "template", "spec", "containers"]):
                     c.pop("env", None)
-        if not containers:
-            expected -= {C1.value, C2.value, C3.value}
-            for d in deployments:
-                del d["spec"]["template"]["spec"]["containers"]
         if not annotations:
             expected -= {AN1.value, AN2.value, AN3.value,
                          AN4.value, AN5.value, AN6.value, AN7.value}
@@ -824,7 +813,8 @@ class TestOperatorCSV(object):
                 'annotations': {
                     'foo': pullspec
                 }
-            }
+            },
+            'spec': {'install': {}}
         }
         csv = OperatorCSV("original.yaml", data)
         csv.set_related_images()
@@ -848,7 +838,8 @@ class TestOperatorCSV(object):
                 'annotations': {
                     'foo': "{}, {}".format(p1, p2)
                 }
-            }
+            },
+            'spec': {'install': {}}
         }
         csv = OperatorCSV("original.yaml", data)
         if should_fail:
@@ -914,6 +905,7 @@ class TestOperatorCSV(object):
     def test_set_related_images_conflicts(self, related_images, containers, err_msg):
         data = {
             "kind": "ClusterServiceVersion",
+            "metadata": {},
             "spec": {
                 "relatedImages": related_images,
                 "install": {
@@ -949,12 +941,13 @@ class TestOperatorCSV(object):
     @pytest.mark.parametrize('pullspecs, does_have', [
         (None, False),
         ([], False),
-        ({'name': 'foo', 'image': 'bar'}, True),
+        ([{'name': 'foo', 'image': 'bar'}], True),
     ])
     def test_has_related_images(self, pullspecs, does_have):
         data = {
             'kind': 'ClusterServiceVersion',
-            'spec': {}
+            'spec': {'install': {}},
+            'metadata': {}
         }
         if pullspecs is not None:
             data['spec']['relatedImages'] = pullspecs
@@ -969,6 +962,7 @@ class TestOperatorCSV(object):
     def test_has_related_image_envs(self, var, does_have):
         data = {
             'kind': 'ClusterServiceVersion',
+            'metadata': {},
             'spec': {
                 'install': {
                     'spec': {
@@ -1003,6 +997,9 @@ class TestOperatorCSV(object):
                 'annotations': {
                     'foo': 'test'
                 }
+            },
+            'spec': {
+                'install': {}
             }
         }
         csv = OperatorCSV("original.yaml", data)
@@ -1042,7 +1039,10 @@ class TestOperatorCSV(object):
             'metadata': {
                 'annotations': {
                     'foo': ", ".join(pullspecs)
-                }
+                },
+            },
+            'spec': {
+                'install': {}
             }
         }
         csv = OperatorCSV("original.yaml", data)
@@ -1066,7 +1066,8 @@ class TestOperatorCSV(object):
                         'containerImage': 'a.b/c:1',
                         'notContainerImage': 'a.b/c:1'
                     }
-                }
+                },
+                'install': {}
             }
         }
         replacements = {
@@ -1107,6 +1108,9 @@ class TestOperatorCSV(object):
                         'pullspec': 'metadata.annotations/nested.in:metadata'
                     }
                 }
+            },
+            'spec': {
+                'install': {'strategy': 'deployment'}
             }
         }
         csv = OperatorCSV("original.yaml", data)
@@ -1116,11 +1120,17 @@ class TestOperatorCSV(object):
         [
             {
                 'kind': 'ClusterServiceVersion',
+                'metadata': {
+                    'name': 'foo'
+                },
                 'spec': {
                     'relatedImages': [
                         {'name': 'foo', 'image': 'repo/ns/foo@0.1'},
                         {'name': 'bar', 'image': 'repo/ns/bar:sha256:123456'},
-                    ]
+                    ],
+                    'install': {
+                        'strategy': 'deployment'
+                    }
                 }
             },
             [
@@ -1129,11 +1139,13 @@ class TestOperatorCSV(object):
             ]
         ],
         [
-            {'kind': 'ClusterServiceVersion', 'spec': {}},
+            {'kind': 'ClusterServiceVersion', 'metadata': {'name': 'foo'},
+             'spec': {'install': {'strategy': 'deployment'}}},
             []
         ],
         [
-            {'kind': 'ClusterServiceVersion', 'spec': {'relatedImages': []}},
+            {'kind': 'ClusterServiceVersion', 'metadata': {'name': 'foo'},
+             'spec': {'relatedImages': [], 'install': {'strategy': 'deployment'}}},
             []
         ]
     ])
@@ -1321,12 +1333,22 @@ class TestOperatorCSV2(object):
     def test_replace_retain_quotes(self, tmpdir):
         original_content = dedent("""\
         kind: ClusterServiceVersion
+        metadata:
+          name: foo
+        spec:
+          install:
+            strategy: deployment
         blah:
         - name: "quoted-value"
         - {"name": "weird:value"}
         """)
         replaced_content = dedent("""\
         kind: ClusterServiceVersion
+        metadata:
+          name: foo
+        spec:
+          install:
+            strategy: deployment
         blah:
         - name: "quoted-value"
         - {"name": "weird:value"}

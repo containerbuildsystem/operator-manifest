@@ -16,6 +16,8 @@ from operator_manifest.cli import (
 CSV_TEMPLATE = """\
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
+metadata:
+  name: foo
 spec:
   install:
     spec:
@@ -44,6 +46,8 @@ CSV_TEMPLATE_WITH_RELATED_IMAGES = (
 CSV_RESOLVED_TEMPLATE = """\
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
+metadata:
+  name: foo
 spec:
   install:
     spec:
@@ -250,6 +254,8 @@ class TestReplaceImageReferences:
             """\
             apiVersion: operators.coreos.com/v1alpha1
             kind: ClusterServiceVersion
+            metadata:
+              name: foo
             spec:
               install:
                 spec:

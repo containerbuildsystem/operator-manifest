@@ -12,7 +12,9 @@ setup(
     install_requires=[
         'ruamel.yaml',
         'six',
+        'jsonschema',
     ],
+    package_data={'operator_manifest': ['schemas/*.json']},
     classifiers=[
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 3.6',
