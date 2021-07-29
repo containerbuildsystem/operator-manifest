@@ -6,6 +6,9 @@
 
 A python library for processing operator manifests.
 
+> **NOTE**: This library is being rewritten in go with CLI compatibility, see
+> [operator-framework/operator-manifest-tools](https://github.com/operator-framework/operator-manifest-tools).
+
 ## Pull Specifications
 
 The `OperatorManifest` class can be used to identify and modify all the container image pull
