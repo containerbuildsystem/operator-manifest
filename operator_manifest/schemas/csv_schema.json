@@ -99,7 +99,8 @@
                                                       "items":{
                                                          "type":"object",
                                                          "required":[
-                                                            "name"
+                                                            "name",
+                                                            "image"
                                                          ],
                                                          "properties":{
                                                             "name":{
