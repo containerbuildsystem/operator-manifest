@@ -11,7 +11,6 @@ setup(
     url='https://github.com/containerbuildsystem/operator-manifest',
     install_requires=[
         'ruamel.yaml',
-        'six',
         'jsonschema',
     ],
     package_data={'operator_manifest': ['schemas/*.json']},
