@@ -9,6 +9,11 @@ A python library for processing operator manifests.
 > **NOTE**: This library is being rewritten in go with CLI compatibility, see
 > [operator-framework/operator-manifest-tools](https://github.com/operator-framework/operator-manifest-tools).
 
+## Install
+
+    $ pip install operator-manifest
+
+> **NOTE**:  *operator-manifest* library requires that skopeo is installed on the system
 ## Pull Specifications
 
 The `OperatorManifest` class can be used to identify and modify all the container image pull

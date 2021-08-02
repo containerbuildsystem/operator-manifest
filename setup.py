@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='operator-manifest',
-    version='0.0.5',
+    version='1.0.0',
     long_description=__doc__,
     packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
@@ -11,7 +11,6 @@ setup(
     url='https://github.com/containerbuildsystem/operator-manifest',
     install_requires=[
         'ruamel.yaml',
-        'six',
         'jsonschema',
     ],
     package_data={'operator_manifest': ['schemas/*.json']},
