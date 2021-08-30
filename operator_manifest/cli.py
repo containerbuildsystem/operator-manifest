@@ -254,10 +254,6 @@ def replace_image_references(manifest_dir, replacements_file, dry_run=False):
 
     operator_manifest = OperatorManifest.from_directory(abs_manifest_dir)
 
-    if not _should_apply_replacements(manifest_dir):
-        logger.warning('Skipping replacements')
-        return
-
     replacements = {}
     for k, v in json.load(replacements_file).items():
         replacements[ImageName.parse(k)] = ImageName.parse(v)
@@ -301,10 +297,6 @@ def pin_image_references(
 
     extract_image_references(manifest_dir, output=output_extract)
 
-    if not _should_apply_replacements(manifest_dir):
-        logger.warning('Skipping replacements. Replacement file is not created')
-        return
-
     output_extract.flush()
     output_extract.seek(0)
     resolve_image_references(output_extract, output_replace, authfile=authfile)
@@ -312,23 +304,6 @@ def pin_image_references(
     output_replace.flush()
     output_replace.seek(0)
     replace_image_references(manifest_dir, output_replace, dry_run=dry_run)
-
-
-def _should_apply_replacements(manifest_dir):
-    abs_manifest_dir = _normalize_dir_path(manifest_dir)
-
-    operator_manifest = OperatorManifest.from_directory(abs_manifest_dir)
-
-    if operator_manifest.csv.has_related_images():
-        csv_file_name = os.path.basename(operator_manifest.csv.path)
-        if operator_manifest.csv.has_related_image_envs():
-            raise ValueError(
-                f'The ClusterServiceVersion file {csv_file_name} has entries in '
-                'spec.relatedImages and one or more containers have RELATED_IMAGE_* '
-                'environment variables set. This is not allowed.'
-            )
-        return False
-    return True
 
 
 def _normalize_dir_path(path):
