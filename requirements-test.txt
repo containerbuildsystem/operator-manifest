@@ -67,8 +67,8 @@ coverage==5.5 \
     # via
     #   -r requirements-test.in
     #   pytest-cov
-flexmock==0.10.7 \
-    --hash=sha256:0abedcc894a817452ae3902e8e00f0a8d2c66497f63caaaab03cbd464ea63d04
+flexmock==0.10.8 \
+    --hash=sha256:6820031c39b298646194a3f0b2b693322bb7f44b39dbaf1c54b0ae68b3d768fa
     # via -r requirements-test.in
 importlib-metadata==4.6.1 \
     --hash=sha256:079ada16b7fc30dfbb5d13399a5113110dab1aa7c2bc62f66af75f0b717c8cac \
