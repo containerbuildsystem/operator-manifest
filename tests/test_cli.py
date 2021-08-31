@@ -212,7 +212,7 @@ class TestReplaceImageReferences:
             )
 
     @pytest.mark.parametrize('dry_run', (True, False))
-    def test_skip_replacements(self, tmp_path, dry_run):
+    def test_related_images_exist(self, tmp_path, dry_run):
         eggs_image_reference = 'registry.example.com/eggs:9.8'
         spam_image_reference = 'registry.example.com/maps/spam-operator:1.2'
 
@@ -227,6 +227,10 @@ class TestReplaceImageReferences:
         )
         csv_path.write_text(original_csv_text)
 
+        replaced_csv_text = CSV_TEMPLATE_WITH_RELATED_IMAGES.format(
+            eggs=eggs_image_reference_resolved, spam=spam_image_reference_resolved
+        )
+
         replacements = {
             spam_image_reference: spam_image_reference_resolved,
             eggs_image_reference: eggs_image_reference_resolved,
@@ -237,20 +241,28 @@ class TestReplaceImageReferences:
 
         replace_image_references(str(manifest_dir), replacements_input_file, dry_run=dry_run)
 
-        # relatedImages section exists, CSV should not be modified
-        assert csv_path.read_text() == original_csv_text
+        if dry_run:
+            assert csv_path.read_text() == original_csv_text
+        else:
+            assert csv_path.read_text() == replaced_csv_text
 
     @pytest.mark.parametrize('dry_run', (True, False))
-    def test_error_on_related_images_with_related_image_env(self, tmp_path, dry_run):
+    def test_replace_related_images_env(self, tmp_path, dry_run):
         eggs_image_reference = 'registry.example.com/eggs:9.8'
         spam_image_reference = 'registry.example.com/maps/spam-operator:1.2'
+        bacon_image_reference = 'registry.example.com/maps/bacon:7.7'
+
+        eggs_image_reference_resolved = 'registry.example.com/eggs@sha256:2'
+        spam_image_reference_resolved = 'registry.example.com/maps/spam-operator@sha256:1'
+        bacon_image_reference_resolved = 'registry.example.com/maps/bacon@sha256:7'
 
         manifest_dir = tmp_path / 'manifests'
         manifest_dir.mkdir()
         csv_path = manifest_dir / 'spam.yaml'
         # relatedImages is set and one of the containers uses an environment variable
-        # with the suffix RELATED_IMAGE_. This is not allowed.
+        # with the suffix RELATED_IMAGE_. relatedImages section must be ignored and re-created.
         original_csv_text = dedent(
+            # `bacon` missing in relatedImages
             """\
             apiVersion: operators.coreos.com/v1alpha1
             kind: ClusterServiceVersion
@@ -268,25 +280,63 @@ class TestReplaceImageReferences:
                             image: {spam}
                             env:
                             - name: RELATED_IMAGE_BACON
-                              value: {eggs}
+                              value: {bacon}
               relatedImages:
               - name: spam-operator
                 image: {spam}
               - name: eggs
                 image: {eggs}
         """
-        ).format(spam=spam_image_reference, eggs=eggs_image_reference)
+        ).format(spam=spam_image_reference, eggs=eggs_image_reference, bacon=bacon_image_reference)
         csv_path.write_text(original_csv_text)
 
+        replaced_csv_text = dedent(
+            """\
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: ClusterServiceVersion
+            metadata:
+              name: foo
+            spec:
+              install:
+                spec:
+                  deployments:
+                  - spec:
+                      template:
+                        spec:
+                          containers:
+                          - name: spam-operator
+                            image: {spam}
+                            env:
+                            - name: RELATED_IMAGE_BACON
+                              value: {bacon}
+              relatedImages:
+              - name: spam-operator
+                image: {spam}
+              - name: eggs
+                image: {eggs}
+              - name: bacon
+                image: {bacon}
+        """
+        ).format(
+            spam=spam_image_reference_resolved,
+            eggs=eggs_image_reference_resolved,
+            bacon=bacon_image_reference_resolved,
+        )
+
         replacements_input_file = io.StringIO()
-        json.dump({}, replacements_input_file)
+        json.dump({
+            spam_image_reference: spam_image_reference_resolved,
+            eggs_image_reference: eggs_image_reference_resolved,
+            bacon_image_reference: bacon_image_reference_resolved,
+        }, replacements_input_file)
         replacements_input_file.seek(0)
 
-        with pytest.raises(ValueError, match=r'This is not allowed'):
-            replace_image_references(str(manifest_dir), replacements_input_file, dry_run=dry_run)
+        replace_image_references(str(manifest_dir), replacements_input_file, dry_run=dry_run)
 
-        # Verify CSV is left intact after failure
-        assert csv_path.read_text() == original_csv_text
+        if dry_run:
+            assert csv_path.read_text() == original_csv_text
+        else:
+            assert csv_path.read_text() == replaced_csv_text
 
     @pytest.mark.parametrize('dry_run', (True, False))
     def test_check_manifest_dir_exists(self, tmp_path, dry_run):
@@ -426,9 +476,18 @@ class TestPinImageReferences:
 
     @pytest.mark.parametrize('dry_run', (True, False))
     @mock.patch('operator_manifest.cli.resolve_image_reference')
-    def test_skip_replacements(self, resolve_image_reference, tmp_path, dry_run):
+    def test_related_images_exist(self, resolve_image_reference, tmp_path, dry_run):
         eggs_image_reference = 'registry.example.com/eggs:9.8'
         spam_image_reference = 'registry.example.com/maps/spam-operator:1.2'
+
+        eggs_image_reference_resolved = 'registry.example.com/eggs@sha256:2'
+        spam_image_reference_resolved = 'registry.example.com/maps/spam-operator@sha256:1'
+
+        replacements = {
+            eggs_image_reference: eggs_image_reference_resolved,
+            spam_image_reference: spam_image_reference_resolved,
+        }
+        resolve_image_reference.side_effect = lambda image_ref, authfile: replacements[image_ref]
 
         manifest_dir = tmp_path / 'manifests'
         manifest_dir.mkdir()
@@ -437,6 +496,10 @@ class TestPinImageReferences:
             eggs=eggs_image_reference, spam=spam_image_reference
         )
         csv_path.write_text(original_csv_text)
+
+        resolved_csv_text = CSV_TEMPLATE_WITH_RELATED_IMAGES.format(
+            eggs=eggs_image_reference_resolved, spam=spam_image_reference_resolved
+        )
 
         output_extract_file = io.StringIO()
         output_replace_file = io.StringIO()
@@ -447,8 +510,10 @@ class TestPinImageReferences:
             dry_run=dry_run,
         )
 
-        resolve_image_reference.assert_not_called()
-        assert csv_path.read_text() == original_csv_text
+        if dry_run:
+            assert csv_path.read_text() == original_csv_text
+        else:
+            assert csv_path.read_text() == resolved_csv_text
 
         output_extract_file.seek(0)
         assert sorted(json.load(output_extract_file)) == [
@@ -457,7 +522,7 @@ class TestPinImageReferences:
         ]
 
         output_replace_file.seek(0)
-        assert output_replace_file.read() == ''
+        assert json.loads(output_replace_file.read()) == replacements
 
     @pytest.mark.parametrize('dry_run', (True, False))
     def test_check_manifest_dir_exists(self, tmp_path, dry_run):
