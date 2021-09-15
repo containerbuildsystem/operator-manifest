@@ -97,7 +97,7 @@ $ podman run --rm -it \
     --authfile /opt/app-root/workdir/docker-config.json
 ```
 
-## Running the Unit Tests
+## Running Tests
 
 The testing environment is managed by [tox](https://tox.readthedocs.io/en/latest/). Simply run
 `tox` and all the linting and unit tests will run.
@@ -106,6 +106,24 @@ If you'd like to run a specific unit test, you can do the following:
 
 ```bash
 tox -e py37 tests/test_operator.py::TestOperatorCSV::test_valuefrom_references_not_allowed
+```
+
+### Integration Tests
+
+Integration tests are not part of the default `tox` suite, run them with `tox -e integration`.
+
+Tests that require authentication will, by default, be skipped. To run them:
+
+1. Create authfile with credentials that can be used to access *registry.redhat.io*
+   (this authfile is created for you when you use docker login or podman login).
+2. Run `AUTHFILE_PATH=<path to authfile> tox -e integration`
+
+Tox will execute the test command in the `tests/integration` directory. To run a specific test,
+you can use the same approach as for unit tests but the path to the test file has to be relative
+to `tests/integration`. Example:
+
+```bash
+tox -e integration test.py::TestReplaceCommand::test_command
 ```
 
 ## Dependency Management
