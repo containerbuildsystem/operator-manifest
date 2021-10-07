@@ -11,7 +11,7 @@ attrs==21.2.0 \
     #   -r requirements.txt
     #   jsonschema
     #   pytest
-coverage==6.0.1 \
+coverage[toml]==6.0.1 \
     --hash=sha256:07efe1fbd72e67df026ad5109bcd216acbbd4a29d5208b3dab61779bae6b7b26 \
     --hash=sha256:0898d6948b31df13391cd40568de8f35fa5901bc922c5ae05cf070587cb9c666 \
     --hash=sha256:0a7e55cc9f7efa22d5cc9966276ec7a40a8803676f6ccbfdc06a486fba9aa9ee \
@@ -114,9 +114,9 @@ pytest==6.2.5 \
     # via
     #   -r requirements-test.in
     #   pytest-cov
-pytest-cov==2.12.1 \
-    --hash=sha256:261bb9e47e65bd099c89c3edf92972865210c36813f80ede5277dceb77a4a62a \
-    --hash=sha256:261ceeb8c227b726249b376b8526b600f38667ee314f910353fa318caa01f4d7
+pytest-cov==3.0.0 \
+    --hash=sha256:578d5d15ac4a25e5f961c938b85a05b09fdaae9deef3bb6de9a6e766622ca7a6 \
+    --hash=sha256:e7f0f5b1617d2210a2cabc266dfe2f4c75a8d32fb89eafb7ad9d06f6d076d470
     # via -r requirements-test.in
 ruamel.yaml==0.16.10 \
     --hash=sha256:0962fd7999e064c4865f96fb1e23079075f4a2a14849bcdc5cdba53a24f9759b \
@@ -157,9 +157,11 @@ six==1.16.0 \
 toml==0.10.2 \
     --hash=sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b \
     --hash=sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f
-    # via
-    #   pytest
-    #   pytest-cov
+    # via pytest
+tomli==1.2.1 \
+    --hash=sha256:8dd0e9524d6f386271a36b41dbf6c57d8e32fd96fd22b6584679dc569d20899f \
+    --hash=sha256:a5b75cb6f3968abb47af1b40c1819dc519ea82bcc065776a866e8d74c5ca9442
+    # via coverage
 typing-extensions==3.10.0.0 \
     --hash=sha256:0ac0f89795dd19de6b97debb0c6af1c70987fd80a2d62d1958f7e56fcc31b497 \
     --hash=sha256:50b6f157849174217d0656f99dc82fe932884fb250826c18350e159ec6cdf342 \
