@@ -48,8 +48,9 @@ coverage[toml]==6.0.1 \
     # via
     #   -r requirements-test.in
     #   pytest-cov
-flexmock==0.10.10 \
-    --hash=sha256:8bb073f4b7b590672e8c312e73d6a14f88ae624a867b691462f9e8c24b9f19d1
+flexmock==0.11.0 \
+    --hash=sha256:40454f15fa1157183360e2ca447b6c47fb8bc9bd766d82040f9b9b64b083f7fc \
+    --hash=sha256:766a7ff8ae716c5f88e4757e61015c573084e7235e5e89ebf6e82bd38ec8a522
     # via -r requirements-test.in
 importlib-metadata==4.6.1 \
     --hash=sha256:079ada16b7fc30dfbb5d13399a5113110dab1aa7c2bc62f66af75f0b717c8cac \
