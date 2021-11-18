@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='operator-manifest',
-    version='2.0.0',
+    version='2.0.1',
     long_description="A python library for processing operator manifests.",
     packages=find_packages(exclude=['tests', 'tests.*']),
     zip_safe=False,
