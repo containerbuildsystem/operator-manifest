@@ -6,7 +6,6 @@ setup(
     version='2.0.0',
     long_description="A python library for processing operator manifests.",
     packages=find_packages(exclude=['tests', 'tests.*']),
-    include_package_data=True,
     zip_safe=False,
     url='https://github.com/containerbuildsystem/operator-manifest',
     install_requires=[
