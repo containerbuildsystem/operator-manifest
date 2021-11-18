@@ -70,6 +70,21 @@ the `pin` subcommand is a shortcut for piping the other three subcommands togeth
 ```
 operator-manifest extract . | operator-manfiest resolve - | operator-manifest replace . -
 ```
+Example of references (output of `extract` command):
+```json
+[
+  "registry.fedoraproject.org/fedora:latest",
+  "registry.access.redhat.com/ubi8:8.5"
+]
+```
+
+Example of replacements (output of `resolve` command):
+```json
+{
+  "registry.fedoraproject.org/fedora:latest": "registry.fedoraproject.org/fedora@sha256:6bea36502f5888df52a3dd7641af2161c4e0f35f7cbfda4e6ecd8a446b3ff5e8",
+  "registry.access.redhat.com/ubi8:8.5": "registry.access.redhat.com/ubi8@sha256:060d7d6827b34949cc0fc58a50f72a5dccf00a4cc594406bdf5982f41dfe6118"
+}
+```
 
 Both `replace` and `pin` will:
 
