@@ -1,0 +1,70 @@
+name: Multiarch build
+on:
+  push:
+    branches:
+      - master
+
+  release:
+    types: [published]
+
+env:
+  IMAGE_TAG: latest
+  IMAGE_NAME: operator-manifest
+  IMAGE_REGISTRY: quay.io
+  IMAGE_NAMESPACE: containerbuildsystem
+
+jobs:
+  build-multiarch-images:
+    name: Build multi-platform image using Dockerfile
+    runs-on: ubuntu-20.04
+    steps:
+      - name: add checkout action...
+        uses: actions/checkout@v2
+        
+      - name: Install qemu dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+            
+      - name: Build image linux/amd64
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          tags: linux-amd64
+          arch: amd64
+          containerfiles: |
+            ./Dockerfile
+     
+      - name: Build image linux/ppc64le
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          tags: linux-ppc64le
+          arch: ppc64le
+          containerfiles: |
+            ./Dockerfile
+               
+      - name: Check images created
+        run: buildah images | grep '${{ env.IMAGE_NAME }}'
+          
+      - name: Create and add to manifest
+        run: |
+          buildah manifest create ${{ env.IMAGE_NAME }}
+          buildah manifest add ${{ env.IMAGE_NAME }} ${{ env.IMAGE_NAME }}:linux-amd64
+          buildah manifest add ${{ env.IMAGE_NAME }} ${{ env.IMAGE_NAME }}:linux-ppc64le
+     
+     # Authenticate to container image registry to push the image
+      - name: Podman Login
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USER }}
+          password: ${{ secrets.QUAY_PWD }}
+          
+      - name: Push manifest
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            podman manifest push ${{ env.IMAGE_NAME }}  ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}  --all
+          elif [[ "${{ github.event_name }}" == "release" ]]; then
+            podman manifest push ${{ env.IMAGE_NAME }}  ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}  --all
+          fi
