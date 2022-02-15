@@ -43,6 +43,15 @@ jobs:
           arch: ppc64le
           containerfiles: |
             ./Dockerfile
+            
+      - name: Build image linux/s390x
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          tags: linux-s390x
+          arch: s390x
+          containerfiles: |
+            ./Dockerfile
                
       - name: Check images created
         run: buildah images | grep '${{ env.IMAGE_NAME }}'
