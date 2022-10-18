@@ -16,7 +16,7 @@ jobs:
         python-version: [3.9, 3.8, 3.7, 3.6]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -59,7 +59,7 @@ jobs:
         python-version: [3.9]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -74,7 +74,7 @@ jobs:
   hadolint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: hadolint/hadolint-action@v1.5.0
       with:
         dockerfile: Dockerfile
